@@ -5,6 +5,8 @@
 #include <FloatDefine.h>
 #include <RunningStatistics.h>
 
+// just adding a comment
+
 float amplifiedSignal;
 float filteredSignal;
 
