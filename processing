@@ -1,0 +1,112 @@
+import processing.serial.*;
+
+Serial myPort;        // The serial porthe
+int xPos = 1;         // horizontal position of the graph 
+
+//int xPos = millis()/1000;
+
+//Variables to draw a continuous line.
+int lastxPos=1;
+int lastheight=0;
+
+int screenWidth = 600;
+int screenHeight = 400;
+
+int pulseNumber = 0;
+boolean pulseHigh = false;
+int startTime;
+int stopTime;
+int heartRate;
+
+void makeGrid(int screenWidth, int screenHeight){
+  stroke(0,255,0);
+  strokeWeight(0.5);
+  line(0, screenHeight/2, screenWidth, screenHeight/2);
+  
+  for (int i = 0; i <= 10; i = i+1) {
+    line(i*screenWidth/10, 0, i*screenWidth/10, screenHeight);
+    line(0, i*screenHeight/10, screenWidth, i*screenHeight/10);
+  }
+}
+
+void setup () {
+  // set the window size:
+  size(screenWidth, screenHeight);        
+
+  // List all the available serial ports
+  println(Serial.list());
+  // Check the listed serial ports in your machine
+  // and use the correct index number in Serial.list()[].
+
+  myPort = new Serial(this, Serial.list()[0], 9600);  //
+
+  // A serialEvent() is generated when a newline character is received :
+  myPort.bufferUntil('\n');
+  background(0);      // set inital background:
+  
+  makeGrid(screenWidth, screenHeight);
+   
+  
+}
+void draw () {
+  // everything happens in the serialEvent()
+}
+
+
+
+void serialEvent (Serial myPort) {
+  // get the ASCII string:
+  String inString = myPort.readStringUntil('\n');
+  if (inString != null) {
+    inString = trim(inString);                // trim off whitespaces.
+    float inByte = float(inString);           // convert to a number.
+    
+    if (inByte >= 0 && pulseHigh == false){
+      if (pulseNumber == 0){
+        startTime = millis();
+        //println("first");
+      }
+      else{
+        stopTime = millis();
+      }
+      pulseNumber = pulseNumber + 1;
+      //println("next");
+      pulseHigh = true;
+    }
+    
+    else if (inByte <= 0 && pulseHigh == true){
+      pulseHigh = false;
+    }
+
+    
+    
+    inByte = map(inByte, -1023, 1023, 0, height); //map to the screen height.
+    
+    //Drawing a line from Last inByte to the new one.
+    stroke(255,0,0);     //stroke color
+    strokeWeight(4);        //stroke wider
+    line(lastxPos, lastheight, xPos, height - inByte); 
+    lastxPos= xPos;
+    lastheight= int(height-inByte);
+    
+
+    // at the edge of the window, go back to the beginning:
+    if (xPos >= width) {
+      xPos = 0;
+      lastxPos= 0;
+      background(0);  //Clear the screen.
+      makeGrid(screenWidth, screenHeight);
+      
+      heartRate = 60*1000*(pulseNumber-1)/(stopTime-startTime);
+      textSize(16);
+      //text("This is your heart beat. Your heart rate is " + str(heartRate) + " bpm.", 10, 30); 
+      //fill(0, 102, 153);
+      
+      pulseNumber = 0;
+    } 
+    else {
+      // increment the horizontal position:
+      xPos++;
+    }
+  }
+}
